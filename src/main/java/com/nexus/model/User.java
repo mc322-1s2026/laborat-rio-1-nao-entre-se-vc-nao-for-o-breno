@@ -18,6 +18,11 @@ public class User {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username não pode ser vazio.");
         }
+        if (!validate(email))
+        {
+            throw new IllegalArgumentException("Email invalido");
+            
+        }
         this.username = username;
         this.email = email;
     }
