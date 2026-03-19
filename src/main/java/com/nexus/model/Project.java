@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.nexus.service.Workspace;
 import com.nexus.exception.NexusValidationException;
 
 public class Project {
+
     private String name;
     private int totalEffort = 0;
     private int totalBudget;
@@ -15,6 +17,7 @@ public class Project {
 
     public Project(String name, int totalBudget) {
         this.name = name;
+        Workspace.addProjectToMap(this.name,this);
         this.totalBudget = totalBudget;
         this.tasks = new ArrayList<>();
 }
