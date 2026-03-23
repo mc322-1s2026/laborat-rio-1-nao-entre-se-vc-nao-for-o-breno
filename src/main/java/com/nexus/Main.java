@@ -5,7 +5,6 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Optional;
 
 import com.nexus.model.Project;
 import com.nexus.exception.NexusValidationException;
@@ -48,8 +47,9 @@ public class Main {
                 }
                 case "1" -> addUser();
                 case "2" -> addTask();
-                case "3" -> listTasks();
-                case "4" -> {
+                case "3" -> addProject();
+                case "4" -> listTasks();
+                case "5" -> {
                     System.out.println("1. Carregar Log V1 (Básico)\n2. Carregar Log V2 (Desafio)");
                     String logChoice = scanner.nextLine();
                     String file = (logChoice.equals("1")) ? "log_v1.txt" : "log_v2.txt";
@@ -72,8 +72,9 @@ public class Main {
             ======= NEXUS CORE: MENU =======
             1. Adicionar Usuário
             2. Adicionar Tarefa
-            3. Listar Todas as Tarefas
-            4. Processar Log de Ações
+            3. Adicionar Projeto
+            4. Listar Todas as Tarefas
+            5. Processar Log de Ações
             0. Sair
             Escolha uma opção:\s""");
     }
@@ -95,6 +96,8 @@ public class Main {
             System.out.println("[OK] Usuário cadastrado.");
         } catch (NexusValidationException e) {
             System.err.println("[ERRO] " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERRO] " + e.getMessage());        
         }
     }
 
@@ -109,19 +112,45 @@ public class Main {
             String title = scanner.nextLine();
             System.out.print("Prazo (AAAA-MM-DD): ");
             LocalDate deadline = LocalDate.parse(scanner.nextLine());
+            
             System.out.print("Tempo Estimado: ");
             int estimatedEffort = Integer.parseInt(scanner.nextLine());
+            
             System.out.print("Projeto: ");
             String projectString = scanner.nextLine();
+            
             Project project = Workspace.getProjectFromName(projectString);
-
+            if (project == null) throw new RuntimeException();
+            
             Task newTask = new Task(title, deadline, estimatedEffort, project);
             Workspace.addTask(newTask);
             System.out.println("[OK] Tarefa adicionada ao backlog.");
         } catch (DateTimeParseException e) {
             System.err.println("[ERRO] Formato de data inválido. Use AAAA-MM-DD.");
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERRO] Argumento Inválido: Prazo estimado deve ser um número inteiro.");
+        } catch (RuntimeException e) {
+            System.err.println("[ERRO] Argumento Inválido: Projeto inexistente.");
         }
+        
     }
+
+    private static void addProject() {
+        try {
+            System.out.print("Nome do Projeto: ");
+            String title = scanner.nextLine();
+
+            System.out.print("Orçamento de Horas: ");
+            int budgetHours = Integer.parseInt(scanner.nextLine());
+
+            new Project(title,budgetHours);
+
+            System.out.println("[OK] Projeto criado com sucesso: " + title);
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERRO] Argumento Inválido: Orçamento de horas deve ser um número inteiro.");
+        } 
+    }
+
 
     /**
      * Exibe todas as tarefas atualmente armazenadas no {@link Workspace} em

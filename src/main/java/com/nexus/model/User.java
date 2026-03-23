@@ -3,6 +3,7 @@ package com.nexus.model;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 public class User {
     private final String username;
     private final String email;

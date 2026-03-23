@@ -1,13 +1,15 @@
 package com.nexus.service;
 
-import com.nexus.model.*;
-import com.nexus.exception.NexusValidationException;
-import com.nexus.Main;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+
+import com.nexus.Main;
+import com.nexus.exception.NexusValidationException;
+import com.nexus.model.Project;
+import com.nexus.model.Task;
+import com.nexus.model.TaskStatus;
+import com.nexus.model.User;
 
 public class LogProcessor {
 
@@ -35,6 +37,7 @@ public class LogProcessor {
                             case "CREATE_USER" -> {
                                 users.add(new User(arguments[1], arguments[2]));
                                 System.out.println("[LOG] Usuário criado: " + arguments[1]);
+                                break;
                             }
                             case "CREATE_TASK" -> {
 
@@ -48,6 +51,8 @@ public class LogProcessor {
                                 new Task(taskName, dueDate, estimatedEffort, project);
                                 
                                 System.out.println("[LOG] Tarefa criada: " + taskName);
+                                
+                                break;
                             }
                             case "CREATE_PROJECT" -> {
                                 //lancar erro se ja existe project com esse nome? 
@@ -59,29 +64,102 @@ public class LogProcessor {
 
                                 System.out.println("[LOG] Projeto criado: " + projectName);
                                 
+                                break;
                             }
                             case "ASSIGN_USER" -> {
                                 int taskId = Integer.parseInt(arguments[1]);
+                                Task task = workspace.getTaskById(taskId);
+
+                                if (task == null) throw new IllegalArgumentException();
+
                                 String userName = arguments[2];
                                 User user = Main.getUserByName(userName);
                                 //fazer stream p/ achar task por id
-                                
 
+                                task.assignOwner(user);
+
+                                System.out.println("[LOG] Tarefa delegada ao usuário: " + userName + " (" + task.getTitle() + ")");
+
+                                break;
                             }
                             case "CHANGE_STATUS" -> {
+                                int taskId = Integer.parseInt(arguments[1]);
+                                Task task = workspace.getTaskById(taskId);
+                                
+                                if (task == null) throw new IllegalArgumentException();
 
-
+                                String stringStatus = arguments[2];
+                                
+                                try {
+                                    switch (stringStatus) {
+                                        case "IN_PROGRESS" -> {
+                                            task.moveToInProgress();
+                                            break;
+                                        }
+                                        case "DONE" -> {
+                                            task.markAsDone();
+                                            break;
+                                        }
+                                        case "BLOCKED" -> {
+                                            task.setBlocked();
+                                            break;
+                                        }
+                                        default -> {
+                                            throw new IllegalArgumentException();
+                                        }
+                                    }
+                                    System.out.println("[LOG] Estado da Tarefa (" + task.getTitle() + ") alterado para " + task.getStatus() + " com sucesso.");
+                                } catch (IllegalArgumentException e) {
+                                    System.err.println("[ARGUMENTO INVÁLIDO] Falha no comando '" + line + "': " + e.getMessage());
+                                } catch (NexusValidationException e) {
+                                    System.err.println("[ERRO DE REGRAS] Falha no comando '" + line + "': " + e.getMessage());
+                                }
+                                break;
 
                             }
                             case "REPORT_STATUS" -> {
+                                System.out.println("");
+                                System.out.println("===== RELATORIOS =====");
+                                System.out.println("[Usuarios sobrecarregados]:" );
+                                workspace.overloadedUsers().forEach(user -> 
+                                {
+                                    System.out.println("-" + user.consultUsername());
+                                });
 
+                                TaskStatus bottleneck = workspace.getGlobalBottlenecks();
+                                if (bottleneck != null)
+                                {
 
+                                System.out.println("[Status de maior Gargalo]: " + bottleneck);
+                                }
+                                else {
+                                    System.out.println("[Status de maior Gargalo]: Nao ha gargalos!");
+                                }
+                    
+                                System.out.println("[Status dos projetos]");
 
+                                workspace.getProjectNameList().forEach(
+                                    projectName -> {
+                                        Project project = Workspace.getProjectFromName(projectName);
+                                        System.out.println(projectName + ": " + workspace.getProjectHealth(project) + "% Finished.");
+                                    }
+                                );
+                                
+
+                                
+
+                                break;
                             }
                             default -> System.err.println("[WARN] Ação desconhecida: " + action);
                         }
                     } catch (NexusValidationException e) {
                         System.err.println("[ERRO DE REGRAS] Falha no comando '" + line + "': " + e.getMessage());
+                    }
+                    catch (IllegalArgumentException e) {
+                        System.err.println("[ARGUMENTO INVÁLIDO] Falha no comando '" + line + "': " + e.getMessage());
+                    }
+                    catch (ArrayIndexOutOfBoundsException e) {
+                        System.err.println("[NÚMERO INCORRETO DE ARGUMENTOS] Falha no comando '" + line + "': " + e.getMessage());                        
                     }
                 }
             }
