@@ -72,7 +72,13 @@ public class Workspace {
     public double getProjectHealth(Project project) {
         long totalTasks = project.getTasks().count();
         long doneTasks = project.getTasks().filter(t -> t.getStatus() == TaskStatus.DONE).count();
-        return totalTasks / doneTasks;
+
+        if (totalTasks != 0)
+        {
+            return (doneTasks * 100.0) / totalTasks;
+        }
+
+        return 100.0; // Se nao tem nenhuma task para fazer, entao o projeto esta concluido
     }
 
 
