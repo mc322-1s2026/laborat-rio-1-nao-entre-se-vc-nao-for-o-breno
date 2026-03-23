@@ -165,9 +165,9 @@ public class Main {
     }
 
     public static User getUserByName(String name) {
-        Optional<User> user = users.stream()
+        User user = users.stream()
         .filter(x -> (x.consultUsername()).equals(name))
-        .findFirst();
-        return user.or(null);
+        .findFirst().orElse(null);
+        return user;
     }
 }
