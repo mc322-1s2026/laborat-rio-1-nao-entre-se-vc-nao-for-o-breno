@@ -19,13 +19,13 @@ public class User {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username não pode ser vazio.");
         }
-        this.username = username;
-
         if (!validate(email))
         {
-            throw new IllegalArgumentException("Email invalido.");
+            throw new IllegalArgumentException("Email invalido");
+            
         }
-        this.email = email;
+        this.username = username;
+        this.email = email.toLowerCase();
     }
 
     public String consultEmail() {
