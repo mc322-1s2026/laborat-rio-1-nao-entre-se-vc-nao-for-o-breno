@@ -3,10 +3,10 @@ package com.nexus.service;
 import com.nexus.model.Task;
 import com.nexus.model.TaskStatus;
 import com.nexus.model.User;
+import com.nexus.model.Project;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.Collections;
 import java.util.Comparator;
@@ -68,4 +68,12 @@ public class Workspace {
         Task task = tasks.stream().filter(t -> t.getId() == id).findFirst().orElse(null);
         return task;
     }
+
+    public double getProjectHealth(Project project) {
+        long totalTasks = project.getTasks().count();
+        long doneTasks = project.getTasks().filter(t -> t.getStatus() == TaskStatus.DONE).count();
+        return totalTasks / doneTasks;
+    }
+
+
 }

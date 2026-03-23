@@ -2,6 +2,7 @@ package com.nexus.model;
 
 import java.time.LocalDate;
 
+import com.nexus.service.Workspace;
 import com.nexus.exception.NexusValidationException;
 
 public class Task {
@@ -18,14 +19,19 @@ public class Task {
     private String title;
     private TaskStatus status;
     private User owner;
+    private Project project;
 
-    public Task(String title, LocalDate deadline, int estimatedEffort) {
+    public Task(String title, LocalDate deadline, int estimatedEffort, Project project) {
         this.id = nextId++;
         this.deadline = deadline;
         this.title = title;
         this.status = TaskStatus.TO_DO;
         this.estimatedEffort = estimatedEffort;
-
+        this.project = project;
+        Workspace.addTask(this);
+        if (this.project != null) {
+            this.project.addTask(this);
+        }
         // Ação do Aluno:
         totalTasksCreated++; 
     }
@@ -93,3 +99,4 @@ public class Task {
     public User getOwner() { return owner; }
     public int getEstimatedEffort() { return estimatedEffort; }
 }
+
