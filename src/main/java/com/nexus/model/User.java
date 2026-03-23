@@ -10,7 +10,8 @@ public class User {
     protected static final Pattern VALID_EMAIL_ADDRESS_REGEX =
         Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
 
-    protected static boolean validate(String emailStr) {
+
+    public static boolean validate(String emailStr) {
         Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(emailStr);
         return matcher.matches();
     }
@@ -23,9 +24,8 @@ public class User {
             throw new IllegalArgumentException("Email invalido");
             
         }
-
-        this.email = email.toLowerCase();
         this.username = username;
+        this.email = email.toLowerCase();
     }
 
     public String consultEmail() {
