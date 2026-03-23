@@ -1,8 +1,8 @@
 package com.nexus.model;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 public class User {
     private final String username;
     private final String email;
@@ -23,8 +23,9 @@ public class User {
             throw new IllegalArgumentException("Email invalido");
             
         }
-        this.username = username;
+
         this.email = email.toLowerCase();
+        this.username = username;
     }
 
     public String consultEmail() {
@@ -35,7 +36,10 @@ public class User {
         return username;
     }
 
-    public long calculateWorkload() {
-        return 0; 
-    }
+    public long calculateWorkload(List<Task> tasks) {
+    return tasks.stream()
+        .filter(task -> task.getOwner() == this)
+        .filter(task -> task.getStatus() == TaskStatus.IN_PROGRESS)
+        .count();
+}
 }

@@ -5,7 +5,9 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Optional;
 
+import com.nexus.model.Project;
 import com.nexus.exception.NexusValidationException;
 import com.nexus.model.Task;
 import com.nexus.model.User;
@@ -107,9 +109,14 @@ public class Main {
             String title = scanner.nextLine();
             System.out.print("Prazo (AAAA-MM-DD): ");
             LocalDate deadline = LocalDate.parse(scanner.nextLine());
+            System.out.print("Tempo Estimado: ");
+            int estimatedEffort = Integer.parseInt(scanner.nextLine());
+            System.out.print("Projeto: ");
+            String projectString = scanner.nextLine();
+            Project project = Workspace.getProjectFromName(projectString);
 
-            Task newTask = new Task(title, deadline);
-            workspace.addTask(newTask);
+            Task newTask = new Task(title, deadline, estimatedEffort, project);
+            Workspace.addTask(newTask);
             System.out.println("[OK] Tarefa adicionada ao backlog.");
         } catch (DateTimeParseException e) {
             System.err.println("[ERRO] Formato de data inválido. Use AAAA-MM-DD.");
@@ -155,5 +162,12 @@ public class Main {
     private static String truncar(String str, int tam) {
         if (str == null) return "";
         return str.length() > tam ? str.substring(0, tam - 3) + "..." : str;
+    }
+
+    public static User getUserByName(String name) {
+        Optional<User> user = users.stream()
+        .filter(x -> (x.consultUsername()).equals(name))
+        .findFirst();
+        return user.or(null);
     }
 }
