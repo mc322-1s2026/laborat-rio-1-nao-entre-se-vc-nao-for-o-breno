@@ -99,3 +99,4 @@ public class Task {
     public User getOwner() { return owner; }
     public int getEstimatedEffort() { return estimatedEffort; }
 }
+
