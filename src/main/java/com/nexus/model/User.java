@@ -7,10 +7,10 @@ public class User {
     private final String username;
     private final String email;
 
-    public static final Pattern VALID_EMAIL_ADDRESS_REGEX = 
+    protected static final Pattern VALID_EMAIL_ADDRESS_REGEX =
         Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
 
-    public static boolean validate(String emailStr) {
+    protected static boolean validate(String emailStr) {
         Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(emailStr);
         return matcher.matches();
     }
@@ -18,13 +18,14 @@ public class User {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username não pode ser vazio.");
         }
-        this.username = username;
-
         if (!validate(email))
         {
-            throw new IllegalArgumentException("Email invalido.");
+            throw new IllegalArgumentException("Email invalido");
+            
         }
-        this.email = email;
+
+        this.email = email.toLowerCase();
+        this.username = username;
     }
 
     public String consultEmail() {
