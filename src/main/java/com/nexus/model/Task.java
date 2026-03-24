@@ -66,19 +66,17 @@ public class Task {
      * Regra: Só pode ser movida para DONE se não estiver BLOCKED.
      */
     public void markAsDone() {
-        if (this.status != TaskStatus.IN_PROGRESS && this.status != TaskStatus.DONE)
-        {
-            throw new NexusValidationException(this.status.name() + " Task cannot be marked as DONE");
-        }
-        else if (this.status == TaskStatus.IN_PROGRESS)
-        {
-            this.status = TaskStatus.DONE;
-            activeWorkload -= 1;
-        }
-        else 
+        if (this.status == TaskStatus.DONE)
         {
             throw new NexusValidationException("Task " + this.title  + " is already marked as DONE");
         }
+        else if (this.status == TaskStatus.BLOCKED)
+        {
+            throw new NexusValidationException(this.status.name() + " Task cannot be marked as DONE");
+        }
+
+        this.status = TaskStatus.DONE;
+        activeWorkload -= 1;
     }
 
 
