@@ -1,0 +1,343 @@
+diff --git a/.devcontainer/devcontainer.json b/.devcontainer/devcontainer.json
+old mode 100644
+new mode 100755
+index bb22a00..617a09a
+--- a/.devcontainer/devcontainer.json
++++ b/.devcontainer/devcontainer.json
+@@ -1,9 +1,15 @@
+ {
+-  "name": "Nexus Lab Environment",
+-  "build": { "dockerfile": "../Dockerfile" },
+-  "customizations": {
+-    "vscode": {
+-      "extensions": ["vscjava.vscode-java-pack"]
+-    }
+-  }
++"name":"NexusLabEnvironment",
++"image":"mcr.microsoft.com/devcontainers/java:21-bullseye",
++"workspaceFolder":"/workspaces/${localWorkspaceFolderBasename}",
++"updateRemoteUserUID":true,
++"remoteUser":"vscode",
++"customizations":{
++"vscode":{"extensions":["vscjava.vscode-java-pack"]}
++},
++"features":{
++"ghcr.io/devcontainers/features/java:1":{
++"version":"21","installMaven":"true","installGradle":"true"
++}
++}
+ }
+\ No newline at end of file
+diff --git a/.gitignore b/.gitignore
+old mode 100644
+new mode 100755
+diff --git a/Dockerfile b/Dockerfile
+old mode 100644
+new mode 100755
+diff --git a/LICENSE b/LICENSE
+old mode 100644
+new mode 100755
+diff --git a/README.md b/README.md
+old mode 100644
+new mode 100755
+diff --git a/UsandoDevContainers.md b/UsandoDevContainers.md
+old mode 100644
+new mode 100755
+diff --git a/pom.xml b/pom.xml
+old mode 100644
+new mode 100755
+diff --git a/src/main/java/com/nexus/Main.java b/src/main/java/com/nexus/Main.java
+old mode 100644
+new mode 100755
+index 956ff9d..6ed2a3a
+--- a/src/main/java/com/nexus/Main.java
++++ b/src/main/java/com/nexus/Main.java
+@@ -5,7 +5,9 @@ import java.time.format.DateTimeParseException;
+ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Scanner;
++import java.util.Optional;
+ 
++import com.nexus.model.Project;
+ import com.nexus.exception.NexusValidationException;
+ import com.nexus.model.Task;
+ import com.nexus.model.User;
+@@ -107,9 +109,14 @@ public class Main {
+             String title = scanner.nextLine();
+             System.out.print("Prazo (AAAA-MM-DD): ");
+             LocalDate deadline = LocalDate.parse(scanner.nextLine());
++            System.out.print("Tempo Estimado: ");
++            int estimatedEffort = Integer.parseInt(scanner.nextLine());
++            System.out.print("Projeto: ");
++            String projectString = scanner.nextLine();
++            Project project = Workspace.getProjectFromName(projectString);
+ 
+-            Task newTask = new Task(title, deadline, 4);
+-            workspace.addTask(newTask);
++            Task newTask = new Task(title, deadline, estimatedEffort, project);
++            Workspace.addTask(newTask);
+             System.out.println("[OK] Tarefa adicionada ao backlog.");
+         } catch (DateTimeParseException e) {
+             System.err.println("[ERRO] Formato de data inválido. Use AAAA-MM-DD.");
+@@ -156,4 +163,11 @@ public class Main {
+         if (str == null) return "";
+         return str.length() > tam ? str.substring(0, tam - 3) + "..." : str;
+     }
++
++    public static User getUserByName(String name) {
++        Optional<User> user = users.stream()
++        .filter(x -> (x.consultUsername()).equals(name))
++        .findFirst();
++        return user.or(null);
++    }
+ }
+diff --git a/src/main/java/com/nexus/exception/NexusValidationException.java b/src/main/java/com/nexus/exception/NexusValidationException.java
+old mode 100644
+new mode 100755
+diff --git a/src/main/java/com/nexus/model/Project.java b/src/main/java/com/nexus/model/Project.java
+old mode 100644
+new mode 100755
+index 3bc7b47..e69cbf1
+--- a/src/main/java/com/nexus/model/Project.java
++++ b/src/main/java/com/nexus/model/Project.java
+@@ -4,9 +4,11 @@ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.stream.Stream;
+ 
++import com.nexus.service.Workspace;
+ import com.nexus.exception.NexusValidationException;
+ 
+ public class Project {
++
+     private String name;
+     private int totalEffort = 0;
+     private int totalBudget;
+@@ -15,6 +17,7 @@ public class Project {
+ 
+     public Project(String name, int totalBudget) {
+         this.name = name;
++        Workspace.addProjectToMap(this.name,this);
+         this.totalBudget = totalBudget;
+         this.tasks = new ArrayList<>();
+ }
+diff --git a/src/main/java/com/nexus/model/Task.java b/src/main/java/com/nexus/model/Task.java
+old mode 100644
+new mode 100755
+index 5565a1c..5bc228c
+--- a/src/main/java/com/nexus/model/Task.java
++++ b/src/main/java/com/nexus/model/Task.java
+@@ -2,6 +2,7 @@ package com.nexus.model;
+ 
+ import java.time.LocalDate;
+ 
++import com.nexus.service.Workspace;
+ import com.nexus.exception.NexusValidationException;
+ 
+ public class Task {
+@@ -18,14 +19,19 @@ public class Task {
+     private String title;
+     private TaskStatus status;
+     private User owner;
++    private Project project;
+ 
+-    public Task(String title, LocalDate deadline, int estimatedEffort) {
++    public Task(String title, LocalDate deadline, int estimatedEffort, Project project) {
+         this.id = nextId++;
+         this.deadline = deadline;
+         this.title = title;
+         this.status = TaskStatus.TO_DO;
+         this.estimatedEffort = estimatedEffort;
+-
++        this.project = project;
++        Workspace.addTask(this);
++        if (this.project != null) {
++            this.project.addTask(this);
++        }
+         // Ação do Aluno:
+         totalTasksCreated++; 
+     }
+diff --git a/src/main/java/com/nexus/model/TaskStatus.java b/src/main/java/com/nexus/model/TaskStatus.java
+old mode 100644
+new mode 100755
+diff --git a/src/main/java/com/nexus/model/User.java b/src/main/java/com/nexus/model/User.java
+old mode 100644
+new mode 100755
+index c9530e8..a75719d
+--- a/src/main/java/com/nexus/model/User.java
++++ b/src/main/java/com/nexus/model/User.java
+@@ -3,7 +3,6 @@ package com.nexus.model;
+ import java.util.List;
+ import java.util.regex.Matcher;
+ import java.util.regex.Pattern;
+-
+ public class User {
+     private final String username;
+     private final String email;
+diff --git a/src/main/java/com/nexus/service/LogProcessor.java b/src/main/java/com/nexus/service/LogProcessor.java
+old mode 100644
+new mode 100755
+index 10644f7..8325560
+--- a/src/main/java/com/nexus/service/LogProcessor.java
++++ b/src/main/java/com/nexus/service/LogProcessor.java
+@@ -2,9 +2,12 @@ package com.nexus.service;
+ 
+ import com.nexus.model.*;
+ import com.nexus.exception.NexusValidationException;
++import com.nexus.Main;
++
+ import java.io.IOException;
+ import java.time.LocalDate;
+ import java.util.List;
++import java.util.Optional;
+ 
+ public class LogProcessor {
+ 
+@@ -24,19 +27,56 @@ public class LogProcessor {
+                 for (String line : lines) {
+                     if (line.isBlank() || line.startsWith("#")) continue;
+ 
+-                    String[] p = line.split(";");
+-                    String action = p[0];
++                    String[] arguments = line.split(";");
++                    String action = arguments[0];
+ 
+                     try {
+                         switch (action) {
+                             case "CREATE_USER" -> {
+-                                users.add(new User(p[1], p[2]));
+-                                System.out.println("[LOG] Usuário criado: " + p[1]);
++                                users.add(new User(arguments[1], arguments[2]));
++                                System.out.println("[LOG] Usuário criado: " + arguments[1]);
+                             }
+                             case "CREATE_TASK" -> {
+-                                Task t = new Task(p[1], LocalDate.parse(p[2]));
+-                                workspace.addTask(t);
+-                                System.out.println("[LOG] Tarefa criada: " + p[1]);
++
++                                //toda task tem que pertencer a um project?? 
++
++                                String taskName = arguments[1];
++                                LocalDate dueDate = LocalDate.parse(arguments[2]);
++                                int estimatedEffort = Integer.parseInt(arguments[3]);
++                                Project project = Workspace.getProjectFromName(arguments[4]);
++
++                                new Task(taskName, dueDate, estimatedEffort, project);
++                                
++                                System.out.println("[LOG] Tarefa criada: " + taskName);
++                            }
++                            case "CREATE_PROJECT" -> {
++                                //lancar erro se ja existe project com esse nome? 
++                                // checar se ja existe usando getProjectFromName
++                                String projectName = arguments[1];
++                                int budgetHours = Integer.parseInt(arguments[2]);
++                                
++                                new Project(projectName, budgetHours);
++
++                                System.out.println("[LOG] Projeto criado: " + projectName);
++                                
++                            }
++                            case "ASSIGN_USER" -> {
++                                int taskId = Integer.parseInt(arguments[1]);
++                                String userName = arguments[2];
++                                User user = Main.getUserByName(userName);
++                                //fazer stream p/ achar task por id
++                                
++
++                            }
++                            case "CHANGE_STATUS" -> {
++
++
++
++                            }
++                            case "REPORT_STATUS" -> {
++
++
++
+                             }
+                             default -> System.err.println("[WARN] Ação desconhecida: " + action);
+                         }
+diff --git a/src/main/java/com/nexus/service/Workspace.java b/src/main/java/com/nexus/service/Workspace.java
+old mode 100644
+new mode 100755
+index 6a638a4..8eed0da
+--- a/src/main/java/com/nexus/service/Workspace.java
++++ b/src/main/java/com/nexus/service/Workspace.java
+@@ -1,14 +1,24 @@
+ package com.nexus.service;
+ 
++import com.nexus.exception.NexusValidationException;
++import com.nexus.model.Project;
+ import com.nexus.model.Task;
++
+ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Collections;
++import java.util.HashMap;
+ 
+ public class Workspace {
+-    private final List<Task> tasks = new ArrayList<>();
++    private static final List<Task> tasks = new ArrayList<>();
++    private static HashMap<String,Project> projectFromNameMap = new HashMap<>(); 
++
++    public static void addTask(Task task)
++    {
++        if (task == null) {
++            throw new IllegalArgumentException("Task cannot be null");
++        }
+ 
+-    public void addTask(Task task) {
+         tasks.add(task);
+     }
+ 
+@@ -16,4 +26,12 @@ public class Workspace {
+         // Retorna uma visão não modificável para garantir encapsulamento
+         return Collections.unmodifiableList(tasks);
+     }
++
++    // public Task getTaskById(int id) {
++
++
++    // }
++    
++    public static void addProjectToMap(String projectName, Project project) {projectFromNameMap.put(projectName,project);}
++    public static Project getProjectFromName(String projectName) {return projectFromNameMap.get(projectName);}
+ }
+\ No newline at end of file
+diff --git a/src/main/resources/log_v1.txt b/src/main/resources/log_v1.txt
+old mode 100644
+new mode 100755
+diff --git a/target/classes/log_v1.txt b/target/classes/log_v1.txt
+old mode 100644
+new mode 100755
+diff --git a/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst b/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+index abd9a2f..e69de29 100644
+--- a/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
++++ b/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+@@ -1,7 +0,0 @@
+-com/nexus/model/Task.class
+-com/nexus/exception/NexusValidationException.class
+-com/nexus/model/TaskStatus.class
+-com/nexus/Main.class
+-com/nexus/service/Workspace.class
+-com/nexus/model/User.class
+-com/nexus/service/LogProcessor.class
+diff --git a/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst b/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+index 70872ab..baa384a 100644
+--- a/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
++++ b/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
+@@ -1,7 +1,8 @@
+-/workspaces/laboratorio1/src/main/java/com/nexus/Main.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/exception/NexusValidationException.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/model/Task.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/model/TaskStatus.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/model/User.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/service/LogProcessor.java
+-/workspaces/laboratorio1/src/main/java/com/nexus/service/Workspace.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/Main.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/exception/NexusValidationException.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/model/Project.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/model/Task.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/model/TaskStatus.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/model/User.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/service/LogProcessor.java
++/workspaces/laborat-rio-1-nao-entre-se-vc-nao-for-o-breno/src/main/java/com/nexus/service/Workspace.java

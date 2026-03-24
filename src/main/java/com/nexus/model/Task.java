@@ -8,7 +8,7 @@ import com.nexus.exception.NexusValidationException;
 public class Task {
     // Métricas Globais (Alunos implementam a lógica de incremento/decremento)
     public static int totalTasksCreated = 0;
-    public static int totalValidationErrors = 0;
+    private static int totalValidationErrors = 0;
     public static int activeWorkload = 0;
 
     private static int nextId = 1;
@@ -31,25 +31,29 @@ public class Task {
         Workspace.addTask(this);
         if (this.project != null) {
             this.project.addTask(this);
+            totalTasksCreated++; 
         }
-        // Ação do Aluno:
-        totalTasksCreated++; 
+        else {
+            throw new IllegalArgumentException("The task must be assigned to an existing project");
+        }
     }
+
+
+    public void assignOwner(User user) { this.owner = user; }
 
     /**
      * Move a tarefa para IN_PROGRESS.
      * Regra: Só é possível se houver um owner atribuído e não estiver BLOCKED.
      */
-    public void moveToInProgress(User user) {
+    public void moveToInProgress() {
+        User user = this.owner;
 
-        if (this.status == TaskStatus.BLOCKED) {
-            totalValidationErrors++;
-            throw new NexusValidationException("Blocked task cannot move to IN_PROGRESS");
+        if (this.status == TaskStatus.IN_PROGRESS) {
+            throw new NexusValidationException("Task " + this.title + "is already marked as IN_PROGRESS.");
         }
 
         if (user == null)
         {
-            totalValidationErrors += 1;
             throw new IllegalArgumentException("User cannot be null");
         }
         this.owner = user;
@@ -62,34 +66,33 @@ public class Task {
      * Regra: Só pode ser movida para DONE se não estiver BLOCKED.
      */
     public void markAsDone() {
-        if (this.status == TaskStatus.BLOCKED)
+        if (this.status == TaskStatus.DONE)
         {
-            totalValidationErrors += 1;
-            throw new NexusValidationException("BLOCKED Task cannot be marked as Done");
+            throw new NexusValidationException("Task " + this.title  + " is already marked as DONE");
         }
-        if (this.status == TaskStatus.IN_PROGRESS)
+        else if (this.status == TaskStatus.BLOCKED)
         {
-            this.status = TaskStatus.DONE;
-            activeWorkload -= 1;
+            throw new NexusValidationException(this.status.name() + " Task cannot be marked as DONE");
         }
+
+        this.status = TaskStatus.DONE;
+        activeWorkload -= 1;
     }
 
 
-    public void setBlocked(boolean blocked) {
+    public void setBlocked() {
+
+    boolean blocked = (this.status != TaskStatus.DONE);
 
     if (blocked) {
-
-        if (this.status == TaskStatus.DONE) {
-            totalValidationErrors++;
-            throw new NexusValidationException("DONE tasks cannot be blocked");
-        }
-
         this.status = TaskStatus.BLOCKED;
-
-    } else {
-        this.status = TaskStatus.TO_DO;
+    }
+    else {
+        throw new NexusValidationException("DONE tasks cannot be blocked");
     }
 }
+
+    public static void incrementTotalValidationErrors() { totalValidationErrors++; }
 
     // Getters
     public int getId() { return id; }
@@ -98,5 +101,6 @@ public class Task {
     public LocalDate getDeadline() { return deadline; }
     public User getOwner() { return owner; }
     public int getEstimatedEffort() { return estimatedEffort; }
+    public static int getTotalValidationErrors() {return totalValidationErrors; }
 }
 
